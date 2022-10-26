@@ -17,22 +17,22 @@ Pkg.instantiate()
 ```
 
 # Problem 1
-Before tackling individual components, the given information has been entered in Julia as follows:
+Before tackling individual components, the given information has been entered in Julia for reference:
 
 ```julia
 #Facility Information
-facilities = ["LF", "MRF", "WTE"]; #facility types
-capacities = [200, 350, 150]; #Mg/day
-costs_fixed = [2000, 1500, 2500]; #dollars/day
-tipping_fees = [50, 7, 60]; #dollars/Mg
+facilities = ["WTE", "MRF", "LF"]; #facility types
+capacities = [150, 350, 200]; #Mg/day
+costs_fixed = [2500, 1500, 2000]; #dollars/day
+tipping_fees = [60, 7, 50]; #dollars/Mg
 costs_recycling = [0, 45, 0]; #dollars/Mg recycled
 
 #Relative Distances
-distance_city1 = [30, 5, 15]; #km
-distance_city2 = [25, 15, 10]; #km
-distance_MRF = [32, 0, 15]; #km
-distance_LF = [0, 32, 18]; #km
-distance_WTE = [18, 15, 0]; #km
+distance_city1 = [15, 5, 30]; #km
+distance_city2 = [10, 15, 25]; #km
+distance_WTE = [0, 15, 18]; #km
+distance_MRF = [15, 0, 32]; #km
+distance_LF = [18, 32, 0]; #km
 
 #Transportation Costs
 cost_transport = 1.5; #dollars/Mg/km
@@ -48,33 +48,118 @@ rec_percent = [0, 55, 15, 10, 0, 30, 40, 60, 75, 80, 50, 0];
 ```
 
 ## Problem 1.1
-Calculate overall recycling and ash fractions for the waste produced by each city.
+The following Julia code calculates the overall recycling and ash fractions for the waste produced by each city:
+
+```julia
+rec_frac = mass_percent'*rec_percent / 10000;
+ash_frac = mass_percent'*ash_percent / 10000;
+```
+This gives us a recycling rate of 37.75% and an ash fraction of 16.41%.
 
 ## Problem 1.2
-What are the decision variables for your optimization problem? Provide notation and variable meaning.
+
+The decision variables for this optimization problem are:
+1. Waste transported from city i to disposal j in Mg/day, $W_{ij}$
+2. Residual waste transported from disposal k to disposal j in Mg/day, $R_{kj}$
+3. Operational status of disposal j (a binary variable), $Y_j$
 
 ## Problem 1.3
-Formulate the objective function. Make sure to include any needed derivations or justifications for your equation(s).
+
+The objective function will be to minimize the sum of disposal costs and transportation costs:
+```math
+Cost = \sum_i\sum_j a_{ij}l_{ij}W_{ij} + \sum_j[c_jY_j+\sum_ib_jW_{ij}]
+```
+where $a_{ij}$ is the cost of transporting waste from source i to disposal j in dollars/Mg-km, 
+$l_{ij}$ is the distance between sources i and disposal j in km, 
+$c_j$ is the fixed cost of operating disposal j in dollars/day, and 
+$b_j$ is the variable cost of disposing waste at disposal j in dollars/Mg.
+
+For the specifics of this problem, this translates to:
+1. Waste-to-Energy: $2500Y_1 + 60(W_{11}+W_{21}+R_{21})$
+2. Material Recovery: $1500Y_2 + 7(W_{21}+W_{22})+0.3775(45)(W_{12}+W_{22})$
+3. Landfill: $2000Y_3 + 50(W_{13}+W_{23}+R_{13}+R_{23})$
+4. Transportation: $1.5[15W_{11}+5W_{12}+30W_{13}+10W_{21}+15W_{22}+25W_{23}+18R_{13}+15R_{21}+32R_{23}]$
+
+Then the total cost is: $2500Y_1 + 1500Y_2 + 2000Y_3 + 82.5W_{11} + 31.4875W_{12} + 95W_{13} + 75W_{21} + 46.4875W_{22} + 87.5W_{23} + 77R_{13} + 82.5R_{21} + 98R_{23}$
 
 ## Problem 1.4
-Derive all relevant constraints (you don’t need to write them all out, but they should all be represented through your notation). Make sure to include any needed justifications or derivations. Why is your set of constraints complete?
+Constraints can be organized into city mass balance, capacity mass balance, recycling rate and residual ash constraints, and committment and nonnegativity constraints.
+
+City Mass Balance Constraints: The sum of waste sent to each facility must equal the waste produced by each city.
+* City 1: $W_{11}+W_{12}+W_{13}=100$
+* City 2: $W_{21}+W_{22}+W_{23}=170$
+
+Capacity Mass Balance Constraints: The total weights sent to each facility must not exceed their capacities.
+* WTE: $W_{11}+W_{21}+R_{21} \leq 150$
+* MRF: $W_{12}+W_{22} \leq 350$
+* LF: $W_{13}+W_{23}+R_{23}+R_{13} \leq 200$
+
+Recycling Rate and Residual Ash Constraints: The waste sent from the WTE must be equal to the ash weight produced, and the weight 
+sent from the MRF must be the non-recycled waste that entered the facility.
+* Residual Ash: $R_{13} = 0.1641(W_{11}+W_{21}+R_{21})$
+* Recycling Rate: $R_{21}+R_{23}=(1-0.3775)(W_{12}+W_{22})$
+
+Commitment and Non-Negativity: Defining the binary variables and making all waste streams nonnegative
+* If $W_{11}+W_{21}+R_{21}=0$, $Y_1=0$, else $Y_1=1$
+* If $W_{21}+W_{22}=0$, $Y_1=0$, else $Y_1=1$
+* The landfill must be on: $Y_3=1$
+* Nonnegativity: $W_{ij},R_{ij} \geq 0$
 
 ## Problem 1.5
-Implement your optimization problem in JuMP. For this sub-problem, you only need
-to provide a code block with the problem formulation.
+
+```julia
+using JuMP
+using Cbc
+
+waste = Model(Cbc.Optimizer)
+I = 1:2; #number of cities
+J = 1:3; #number of disposal sites
+
+@variable(waste, W[i in I, j in J] >= 0);
+@variable(waste, R[k in J, j in J] >= 0);
+@variable(waste, Y[j in J], Bin);
+@objective(waste, Min, sum([82.5 31.4875 95; 75 46.4875 87.5].*W)+sum([0 0 77; 82.5 0 98; 0 0 0].*R) + sum(costs_fixed .* Y));
+
+# mass-balance
+@constraint(waste, city[i in I], sum(W[i,:]) == solid_waste[i]);
+@constraint(waste, wte, W[1,1] + W[2,1] + R[2,1] <= capacities[1]);
+@constraint(waste, mrf, W[1,2] + W[2,2]  <= capacities[2]);
+@constraint(waste, lf, W[1,3] + W[2,3] + R[2,3] + R[1,3] <= capacities[3]);
+
+# residuals
+@constraint(waste, resid1, R[1,3] == ash_frac .* (W[1,1] + W[2,1] + R[2,1]));
+@constraint(waste, resid2, R[2,1] + R[2,3] == (1-rec_frac) .* (W[1,2] + W[2,2]));
+@constraint(waste, resid3, sum(R[3,:]) == 0);
+@constraint(waste, noresiddiag, sum(R[i, i] for i in I) == 0);
+@constraint(waste, noresid, R[1,2] == 0);
+
+# commitment
+@constraint(waste, commit1, !Y[1] => {W[1,1] + W[2,1] + R[2,1] == 0});
+@constraint(waste, commit2, !Y[2] => {W[1,2] + W[2,2] == 0});
+@constraint(waste, commit3, Y[3] == 1);
+
+optimize!(waste);
+```
 
 ## Problem 1.6
-Find the optimal solution. Draw a diagram showing the flows of waste between the cities and the facilities. Report the optimal objective value. Which facilities will not be used?
+The following code in Julia determines the requested values.
+```julia
+min_cost = objective_value(waste);
+commitments = value.(Y);
+waste_values = value.(W);
+residual_values = value.(R);
+```
+The objective value is 28,886.36 dollars, and the MRF facility will not be used in this scenario. 
+The following diagram depicts the waste flows from the cities to the facilities.
+![Waste Diagram](waste_diagram.png)
 
 # Problem 2
 
 ## Problem 2.1
-What changes are needed to your optimization program from Problem 1? Formulate any different variables, objectives, and/or constraints.
 
 ## Problem 2.2
-Implement the new optimization problem in JuMP. For this sub-problem, you only need to provide a code block with the problem formulation. You can make only those changes needed from Problem 2.1 or rewrite the entire problem, depending on what’s easier.
 
 ## Problem 2.3
-Find the optimal solution and report the optimal objective value. Provide a diagram showing the new waste flows. What are the differences from the original plan?
 
 # References
+1. Optimization Setup: Mixed Integer Programming and Waste Management Lecture (10/17)

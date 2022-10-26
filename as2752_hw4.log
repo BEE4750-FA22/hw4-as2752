@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999994 (TeX Live 2022) (preloaded format=xelatex 2022.8.31)  25 OCT 2022 15:29
+This is XeTeX, Version 3.141592653-2.6-0.999994 (TeX Live 2022) (preloaded format=xelatex 2022.8.31)  25 OCT 2022 20:27
 entering extended mode
  \write18 enabled.
  %&-line parsing enabled.
@@ -1020,32 +1020,32 @@ Requested font "zplmr7t" at 9.0pt
 Requested font "zplmr7t" at 7.0pt
  -> /usr/local/texlive/2022/texmf-dist/fonts/tfm/public/mathpazo/zplmr7t.tfm
 LaTeX Font Info:    Font shape `U/msa/m/n' will be
-(Font)              scaled to size 12.50409pt on input line 184.
+(Font)              scaled to size 12.50409pt on input line 190.
 Requested font "msam10" at 12.50409pt
  -> /usr/local/texlive/2022/texmf-dist/fonts/tfm/public/amsfonts/symbols/msam10
 .tfm
 LaTeX Font Info:    Font shape `U/msa/m/n' will be
-(Font)              scaled to size 9.37807pt on input line 184.
+(Font)              scaled to size 9.37807pt on input line 190.
 Requested font "msam10" at 9.37807pt
  -> /usr/local/texlive/2022/texmf-dist/fonts/tfm/public/amsfonts/symbols/msam10
 .tfm
 LaTeX Font Info:    Font shape `U/msa/m/n' will be
-(Font)              scaled to size 7.29405pt on input line 184.
+(Font)              scaled to size 7.29405pt on input line 190.
 Requested font "msam10" at 7.29405pt
  -> /usr/local/texlive/2022/texmf-dist/fonts/tfm/public/amsfonts/symbols/msam10
 .tfm
 LaTeX Font Info:    Font shape `U/msb/m/n' will be
-(Font)              scaled to size 12.50409pt on input line 184.
+(Font)              scaled to size 12.50409pt on input line 190.
 Requested font "msbm10" at 12.50409pt
  -> /usr/local/texlive/2022/texmf-dist/fonts/tfm/public/amsfonts/symbols/msbm10
 .tfm
 LaTeX Font Info:    Font shape `U/msb/m/n' will be
-(Font)              scaled to size 9.37807pt on input line 184.
+(Font)              scaled to size 9.37807pt on input line 190.
 Requested font "msbm10" at 9.37807pt
  -> /usr/local/texlive/2022/texmf-dist/fonts/tfm/public/amsfonts/symbols/msbm10
 .tfm
 LaTeX Font Info:    Font shape `U/msb/m/n' will be
-(Font)              scaled to size 7.29405pt on input line 184.
+(Font)              scaled to size 7.29405pt on input line 190.
 Requested font "msbm10" at 7.29405pt
  -> /usr/local/texlive/2022/texmf-dist/fonts/tfm/public/amsfonts/symbols/msbm10
 .tfm
@@ -1073,17 +1073,30 @@ Requested font "zplmb7t" at 9.0pt
  -> /usr/local/texlive/2022/texmf-dist/fonts/tfm/public/mathpazo/zplmb7t.tfm
 Requested font "zplmb7t" at 7.0pt
  -> /usr/local/texlive/2022/texmf-dist/fonts/tfm/public/mathpazo/zplmb7t.tfm
- [2] [3] (./as2752_hw4.aux)
-Package rerunfilecheck Info: File `as2752_hw4.out' has not changed.
-(rerunfilecheck)             Checksum: 1DE37522951F1B0E6F6932F75C1EE384;1292.
- ) 
+LaTeX Font Info:    Trying to load font information for TS1+ppl on input line 2
+30.
+ (/usr/local/texlive/2022/texmf-dist/tex/latex/psnfss/ts1ppl.fd
+File: ts1ppl.fd 2001/06/04 font definitions for TS1/ppl.
+)
+Requested font "pplr8c" at 12.0pt
+ -> /usr/local/texlive/2022/texmf-dist/fonts/tfm/adobe/palatino/pplr8c.tfm
+ [2]
+Requested font "pplr8t" at 10.0pt
+ -> /usr/local/texlive/2022/texmf-dist/fonts/tfm/adobe/palatino/pplr8t.tfm
+
+[3]
+! Missing $ inserted.
+<inserted text> 
+                $
+l.312 command line - Cbc_
+                         C_Interface -solve -quit (default strategy 1) 
 Here is how much of TeX's memory you used:
- 17586 strings out of 476179
- 333665 string characters out of 5809544
- 786476 words of memory out of 5000000
- 38082 multiletter control sequences out of 15000+600000
- 501350 words of font info for 117 fonts, out of 8000000 for 9000
+ 17612 strings out of 476179
+ 334083 string characters out of 5809544
+ 792757 words of memory out of 5000000
+ 38106 multiletter control sequences out of 15000+600000
+ 502594 words of font info for 119 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
- 88i,6n,111p,1007b,969s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 88i,6n,111p,1007b,1757s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
 Output written on as2752_hw4.pdf (3 pages).
