@@ -42,19 +42,24 @@ solid_waste = [100, 170]; #Mg/day
 
 #Waste Composition and Properties
 components = ["Food","Paper","Plastic","Textile","Rubber","Wood","Yard","Glass","Fe","Al","Metal","Misc"];
-mass_percent = [15, 40, 5, 3, 2, 5, 18, 4, 2, 2, 1, 3];
-ash_percent = [8, 7, 5, 10, 15, 2, 2, 100, 100, 100, 100, 70];
-rec_percent = [0, 55, 15, 10, 0, 30, 40, 60, 75, 80, 50, 0];
+mass_percent = [0.15, 0.40, 0.05, 0.03, 0.02, 0.05, 0.18, 0.04, 0.02, 0.02, 0.01, 0.03];
+ash_percent = [0.08, 0.07, 0.05, 0.10, 0.15, 0.02, 0.02, 1, 1, 1, 1, 0.70];
+rec_percent = [0, 0.55, 0.15, 0.10, 0, 0.30, 0.40, 0.60, 0.75, 0.80, 0.50, 0];
 ```
 
 ## Problem 1.1
 The following Julia code calculates the overall recycling and ash fractions for the waste produced by each city:
 
 ```julia
-rec_frac = mass_percent'*rec_percent / 10000;
-ash_frac = mass_percent'*ash_percent / 10000;
+rec_frac = mass_percent'*rec_percent;
+ash_frac_dir = mass_percent'*ash_percent;
+mass_percent_postMRF = (ones(12)-rec_percent).*mass_percent; #composition of non-recycled waste
+mass_percent_postMRF = mass_percent_postMRF / sum(mass_percent_postMRF); #normalized composition of non-recycled waste
+ash_frac_mrf = mass_percent_postMRF'*ash_percent;
 ```
-This gives us a recycling rate of 37.75% and an ash fraction of 16.41%.
+
+This gives us a recycling rate of 37.75% and an ash fractions of 16.41% and 13.86% for waste sent directly to WTE and 
+waste sent from the MRF to WTE respectively.
 
 ## Problem 1.2
 
@@ -76,7 +81,7 @@ $b_j$ is the variable cost of disposing waste at disposal j in dollars/Mg.
 
 For the specifics of this problem, this translates to:
 1. Waste-to-Energy: $2500Y_1 + 60(W_{11}+W_{21}+R_{21})$
-2. Material Recovery: $1500Y_2 + 7(W_{21}+W_{22})+0.3775(45)(W_{12}+W_{22})$
+2. Material Recovery: $1500Y_2 + 7(W_{12}+W_{22})+0.3775(45)(W_{12}+W_{22})$
 3. Landfill: $2000Y_3 + 50(W_{13}+W_{23}+R_{13}+R_{23})$
 4. Transportation: $1.5[15W_{11}+5W_{12}+30W_{13}+10W_{21}+15W_{22}+25W_{23}+18R_{13}+15R_{21}+32R_{23}]$
 
@@ -96,7 +101,7 @@ Capacity Mass Balance Constraints: The total weights sent to each facility must 
 
 Recycling Rate and Residual Ash Constraints: The waste sent from the WTE must be equal to the ash weight produced, and the weight 
 sent from the MRF must be the non-recycled waste that entered the facility.
-* Residual Ash: $R_{13} = 0.1641(W_{11}+W_{21}+R_{21})$
+* Residual Ash: $R_{13} = 0.1641(W_{11}+W_{21})+0.1386R_{21})$
 * Recycling Rate: $R_{21}+R_{23}=(1-0.3775)(W_{12}+W_{22})$
 
 Commitment and Non-Negativity: Defining the binary variables and making all waste streams nonnegative
@@ -108,10 +113,10 @@ Commitment and Non-Negativity: Defining the binary variables and making all wast
 ## Problem 1.5
 
 ```julia
-using JuMP
-using Cbc
+using JuMP;
+using Cbc;
 
-waste = Model(Cbc.Optimizer)
+waste = Model(Cbc.Optimizer);
 I = 1:2; #number of cities
 J = 1:3; #number of disposal sites
 
@@ -127,7 +132,7 @@ J = 1:3; #number of disposal sites
 @constraint(waste, lf, W[1,3] + W[2,3] + R[2,3] + R[1,3] <= capacities[3]);
 
 # residuals
-@constraint(waste, resid1, R[1,3] == ash_frac .* (W[1,1] + W[2,1] + R[2,1]));
+@constraint(waste, resid1, R[1,3] == ash_frac_dir .* (W[1,1] + W[2,1]) + ash_frac_mrf .* R[2,1]);
 @constraint(waste, resid2, R[2,1] + R[2,3] == (1-rec_frac) .* (W[1,2] + W[2,2]));
 @constraint(waste, resid3, sum(R[3,:]) == 0);
 @constraint(waste, noresiddiag, sum(R[i, i] for i in I) == 0);
@@ -157,9 +162,60 @@ The following diagram depicts the waste flows from the cities to the facilities.
 
 ## Problem 2.1
 
+Only the objective function will be altered. In particular,
+1. Waste-to-Energy: $2500Y_1 + 75(W_{11}+W_{21}+R_{21})$
+2. Material Recovery: $1500Y_2 + 7(W_{12}+W_{22})+0.3775(45)(W_{12}+W_{22})$
+3. Landfill: $2000Y_3 + 50(W_{13}+W_{23}+R_{13}+R_{23})$
+4. Transportation: $2[15W_{11}+5W_{12}+30W_{13}+10W_{21}+15W_{22}+25W_{23}+18R_{13}+15R_{21}+32R_{23}]$
+
+Then the total cost is: $2500Y_1 + 1500Y_2 + 2000Y_3 + 105W_{11} + 33.9875W_{12} + 110W_{13} + 95W_{21} + 53.9875W_{22} + 100W_{23} + 86R_{13} + 105R_{21} + 114R_{23}$
+
 ## Problem 2.2
 
+```julia
+using JuMP;
+using Cbc;
+
+waste_alt = Model(Cbc.Optimizer);
+
+@variable(waste_alt, W_alt[i in I, j in J] >= 0);
+@variable(waste_alt, R_alt[k in J, j in J] >= 0);
+@variable(waste_alt, Y_alt[j in J], Bin);
+@objective(waste_alt, Min, sum([105 33.9875 110; 95 53.9875 100].*W_alt)+sum([0 0 86; 105 0 114; 0 0 0].*R_alt) + sum(costs_fixed .* Y_alt));
+
+# mass-balance
+@constraint(waste_alt, city_alt[i in I], sum(W_alt[i,:]) == solid_waste[i]);
+@constraint(waste_alt, wte_alt, W_alt[1,1] + W_alt[2,1] + R_alt[2,1] <= capacities[1]);
+@constraint(waste_alt, mrf_alt, W_alt[1,2] + W_alt[2,2]  <= capacities[2]);
+@constraint(waste_alt, lf_alt, W_alt[1,3] + W_alt[2,3] + R_alt[2,3] + R_alt[1,3] <= capacities[3]);
+
+# residuals
+@constraint(waste_alt, resid1_alt, R_alt[1,3] == ash_frac_dir .* (W_alt[1,1] + W_alt[2,1]) + ash_frac_mrf .* R_alt[2,1]);
+@constraint(waste_alt, resid2_alt, R_alt[2,1] + R_alt[2,3] == (1-rec_frac) .* (W_alt[1,2] + W_alt[2,2]));
+@constraint(waste_alt, resid3_alt, sum(R_alt[3,:]) == 0);
+@constraint(waste_alt, noresiddiag_alt, sum(R_alt[i, i] for i in I) == 0);
+@constraint(waste_alt, noresid_alt, R_alt[1,2] == 0);
+
+# commitment
+@constraint(waste_alt, commit1_alt, !Y_alt[1] => {W_alt[1,1] + W_alt[2,1] + R_alt[2,1] == 0});
+@constraint(waste_alt, commit2_alt, !Y_alt[2] => {W_alt[1,2] + W_alt[2,2] == 0});
+@constraint(waste_alt, commit3_alt, Y_alt[3] == 1);
+
+optimize!(waste_alt);
+```
+
 ## Problem 2.3
+
+The following code in Julia determines the requested values.
+```julia
+min_cost_alt = objective_value(waste_alt);
+commitments_alt = value.(Y_alt);
+waste_values_alt = value.(W_alt);
+residual_values_alt = value.(R_alt);
+```
+The objective value is 33,126.95 dollars, and the WTE facility is not used (in contrast to the MRF facility from last time).
+The following diagram depicts the waste flows from the cities to the facilities.
+![Waste Diagram Alternate](waste_alt_diagram.png)
 
 # References
 1. Optimization Setup: Mixed Integer Programming and Waste Management Lecture (10/17)
